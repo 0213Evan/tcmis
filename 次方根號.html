@@ -1,0 +1,14 @@
+x = int(input("x:"))
+opt = input("運算:⋀(次方)✓(根號)")
+y = int(input("y:"))
+
+if opt == "⋀":
+    result = x ** y
+elif opt == "✓":
+  if y == 0:
+    result = "數學不能開0次方根"
+  else:
+    result = x ** (1/y)
+else:
+  result ="請輸入⋀或✓"
+print(result)
