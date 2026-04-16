@@ -48,24 +48,25 @@ def spider1():
         R += i.text + i.get("href") + "<br>"
     return R
 
-@app.route("/read2")
+@app.route("/read2", methods=["GET", "POST"])
 def read2():
-    Result = ""
-    keyword = "楊"
     db = firestore.client()
-    collection_ref = db.collection("資管二B2026")    
-    docs = collection_ref.get()    
+    collection_ref = db.collection("資管二B2026")
     
-    for doc in docs:
-        teacher = doc.to_dict()
-        teacher_name = teacher.get("name", "")
+    if request.method == "POST":
+        keyword = request.form.get("keyword")
+        docs = collection_ref.get()
         
-        if keyword in teacher_name:       
-            Result += str(teacher) + "<br>" 
-    if Result == "":
-        Result = "抱歉，查無此關鍵字姓名之老師資料"
-    return Result
-
+        result_list = []
+        for doc in docs:
+            teacher = doc.to_dict()
+            teacher_name = teacher.get("name", "")
+            if keyword in teacher_name:
+                result_list.append(teacher)
+        
+        return render_template("search.html", keyword=keyword, result=result_list)
+    
+    return render_template("search.html")
 @app.route("/read")
 def read():
     Result = ""
