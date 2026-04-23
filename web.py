@@ -33,7 +33,57 @@ def index():
     link += "<a href=/read>讀取Firestore資料</a><hr>"
     link += "<a href=/read2>讀取Firestore資料(根據姓名關鍵字:賴)</a><hr>"
     link += "<a href=/spider1>爬取子青老師本學期課程</a><hr>"
+    link += "<a href=/movie1>爬取即將上映電影</a><hr>"
     return link
+
+@app.route("/movie1", methods=["GET", "POST"])
+def movie1():
+    # 1. 建立標題、返回首頁連結與搜尋表單
+    R = "<h1>近期上映電影</h1>"
+    R += "<a href='/'>返回首頁</a><hr>"
+    R += "<form method='POST' action='/movie1'>"
+    R += "請輸入電影名稱: <input type='text' name='keyword'>"
+    R += "<button type='submit'>搜尋</button>"
+    R += "</form><hr>"
+
+    # 2. 接收使用者輸入的關鍵字 (修正縮排)
+    keyword = ""
+    if request.method == "POST":
+        keyword = request.form.get("keyword", "")
+
+    # 3. 進行網頁爬蟲
+    url = "https://www.atmovies.com.tw/movie/next/"
+    Data = requests.get(url)
+    Data.encoding = "utf-8"
+    sp = BeautifulSoup(Data.text, "html.parser")
+    result = sp.select(".filmListAllX li")
+
+    found = False 
+
+    # 4. 處理爬取到的資料並進行比對 (修正縮排)
+    for item in result:
+        a_tag = item.find("a")
+        img_tag = item.find("img")
+
+        if a_tag and img_tag:
+            movie_title = img_tag.get("alt")
+
+            # 如果沒有輸入關鍵字就顯示全部，如果有就進行包含比對
+            if not keyword or (keyword in movie_title):
+                found = True
+                L = "https://www.atmovies.com.tw" + a_tag.get("href") # 修正網址路徑
+                R += "<a href=" + L + ">" + movie_title + "</a><br>"
+                post = img_tag.get("src")
+                # 處理可能的相對路徑
+                if not post.startswith("http"):
+                    post = "https://www.atmovies.com.tw" + post
+                R += "<img src=" + post + " width='200'></img><br><br>"
+
+    # 5. 如果搜尋了但沒找到任何結果
+    if keyword and not found:
+        R += f"<h3>找不到包含「{keyword}」的電影喔！</h3>"
+
+    return R
 
 @app.route("/spider1")
 def spider1():
