@@ -37,8 +37,58 @@ def index():
     link += "<a href=/spiderMovie>讀取開眼電影即將上映影片，寫入Firestore</a><hr>"
     link += "<a href=/searchMovie>從資料庫搜尋電影關鍵字</a><hr>"
     link += "<a href=/road>台中市十大肇事路口</a><hr>"
+    link += "<a href=/weather>查詢縣市天氣與降雨機率</a><hr>"
 
     return link
+
+@app.route("/weather", methods=["GET", "POST"])
+def weather():
+    import urllib3
+    # 關閉 SSL 憑證警告
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    
+    # 1. 建立前端介面 (標題與輸入表單)
+    R = "<h1>縣市天氣與降雨機率查詢</h1>"
+    R += "<a href='/'>返回首頁</a><hr>"
+    R += "<form method='POST' action='/weather'>"
+    R += "請輸入欲查詢的縣市: <input type='text' name='city' placeholder='例如:臺中市' required>"
+    R += "<button type='submit'>查詢</button>"
+    R += "</form><hr>"
+
+    # 2. 當使用者按下「查詢」送出資料時 (POST)
+    if request.method == "POST":
+        # 取得表單輸入的縣市，並將「台」替換為「臺」防呆
+        city = request.form.get("city", "")
+        city_formatted = city.replace("台", "臺")
+
+        # 設定 API 網址與偽裝瀏覽器的 headers
+        url = "https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-C0032-001?Authorization=rdec-key-123-45678-011121314&format=JSON&locationName=" + city_formatted
+        headers = {'User-Agent': 'Mozilla/5.0'}
+
+        try:
+            # 發送請求並解析 JSON
+            Data = requests.get(url, headers=headers, verify=False)
+            JsonData = json.loads(Data.text)
+            locations = JsonData["records"]["location"]
+
+            # 檢查是否有抓到資料
+            if len(locations) > 0:
+                loc_data = locations[0]
+                
+                # 抓取天氣現象與降雨機率
+                Weather = loc_data["weatherElement"][0]["time"][0]["parameter"]["parameterName"]
+                Rain = loc_data["weatherElement"][1]["time"][0]["parameter"]["parameterName"]
+                
+                # 將結果組合成 HTML 顯示在畫面上
+                R += f"<h2>查詢結果：</h2>"
+                R += f"<h3>{loc_data['locationName']} 目前天氣：{Weather}，降雨機率 {Rain}%</h3>"
+            else:
+                R += f"<h3 style='color:red;'>找不到「{city}」的資料，請確認是否輸入了完整的縣市名稱（例如：臺中市）。</h3>"
+                
+        except Exception as e:
+            R += f"<h3>發生錯誤：{str(e)}</h3>"
+
+    return R
 
 @app.route("/road")
 def road():
