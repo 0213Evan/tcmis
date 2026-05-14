@@ -52,7 +52,6 @@ def webhook():
     info = "動作：" + action + "； 查詢內容：" + msg
     return make_response(jsonify({"fulfillmentText": info}))
 
-
 @app.route("/rate")
 def rate():
     #本週新片
